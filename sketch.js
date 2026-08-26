@@ -180,12 +180,10 @@ function blendColors(arr) {
 function getPossibleColorsForTier(tier) {
   if (tier === 0) return baseColors;
   
-  // Use user's self-mixed potions if available
   if (allRings[tier] && allRings[tier].length > 0) {
     return allRings[tier].map(item => item.color);
   }
   
-  // Otherwise, calculate possible theoretical recipes without adding them to stock
   let lowerPool = getPossibleColorsForTier(tier - 1);
   let candidates = [];
   for (let c = 0; c < 3; c++) {
@@ -273,7 +271,7 @@ function drawTargetCure() {
   strokeWeight(1);
   ellipse(340, 36, 18, 18);
   
-  // Hint unlocks only when Poison Health <= 30%
+  // EMERGENCY HINT LOGIC: Locked until Poison Health <= 30%
   if (playerHealth <= 30) {
     fill(255, 90, 90);
     textSize(8);
@@ -586,11 +584,11 @@ function initGame() {
     } 
   });
 
+  // POT INVENTORY RETURN (CLEAR POT) BUTTON
   btnClear = new Button({
     x: 185, y: 350, width: 95, label: "Clear Pot",
     onClick: function() {
       if (showGrimoire) return;
-      // Returns selected ingredients back into ring inventory
       for (let item of potIngredients) {
         if (allRings[item.tier]) {
           let ringItem = allRings[item.tier].find(r => 
