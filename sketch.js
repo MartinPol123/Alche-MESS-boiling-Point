@@ -211,14 +211,14 @@ function setupStageTarget(stage) {
 }
 
 function updateIngredientsAndHealth() {
-  // Spawns 2x faster (5s vs 10s) on ANY stage when Poison HP drops <= 30%
+  // Spawns every 5s if playerHealth <= 30%, otherwise every 10s
   let spawnInterval = (playerHealth <= 30) ? 5000 : 10000;
   
   if (millis() - lastIngredientTime >= spawnInterval) {
     if (allRings[0]) {
-      // Adds +1 to all 3 basic colors at every interval
+      // Adds +1 count to all 3 basic colors simultaneously
       for (let k = 0; k < allRings[0].length; k++) {
-        allRings[0][k].count++;
+        allRings[0][k].count += 1;
       }
     }
     lastIngredientTime = millis();
