@@ -8,6 +8,7 @@ let isDrinkMode = false;
 let lastBrewedColor = [40, 50, 70];
 let targetRemedyColor = [0, 0, 0];
 let targetRecipe = [];
+let usedTargetColors = []; // Tracks target colors to ensure uniqueness per level
 
 const baseColors = [
   [255, 0, 0],   // Red
@@ -198,22 +199,46 @@ function getPossibleColorsForTier(tier) {
 }
 
 function setupStageTarget(stage) {
+  if (stage === 1) {
+    usedTargetColors = [];
+  }
+
   let sourceTier = stage - 1;
   let pool = getPossibleColorsForTier(sourceTier);
   
-  let numItems = floor(random(2, 4));
-  targetRecipe = [];
-  for (let i = 0; i < numItems; i++) {
-    targetRecipe.push(pool[floor(random(0, pool.length))]);
+  let unique = false;
+  let attempts = 0;
+
+  // Guarantees a unique target color distinct from all previous stages
+  while (!unique && attempts < 100) {
+    let numItems = floor(random(2, 4));
+    let candidateRecipe = [];
+    for (let i = 0; i < numItems; i++) {
+      candidateRecipe.push(pool[floor(random(0, pool.length))]);
+    }
+
+    let candidateColor = blendColors(candidateRecipe);
+
+    let isDuplicate = usedTargetColors.some(
+      c => c[0] === candidateColor[0] && c[1] === candidateColor[1] && c[2] === candidateColor[2]
+    );
+
+    if (!isDuplicate) {
+      targetRecipe = candidateRecipe;
+      targetRemedyColor = candidateColor;
+      usedTargetColors.push(targetRemedyColor);
+      unique = true;
+    }
+    attempts++;
   }
 
-  targetRemedyColor = blendColors(targetRecipe);
+  if (!unique) {
+    targetRecipe = [pool[0], pool[1]];
+    targetRemedyColor = blendColors(targetRecipe);
+    usedTargetColors.push(targetRemedyColor);
+  }
 }
 
-/**
- * Updates ingredients timer and health decay.
- * Every 10s (or 5s when health <= 30%), adds +1 count to all 3 basic colors.
- */
 function updateIngredientsAndHealth() {
   let isCritical = (playerHealth <= 30);
   let spawnInterval = isCritical ? 5000 : 10000;
@@ -223,7 +248,7 @@ function updateIngredientsAndHealth() {
       for (let k = 0; k < allRings[0].length; k++) {
         allRings[0][k].count += 1;
       }
-      if (ps) { ps.addStar(); } // Visual spawn effect
+      if (ps) { ps.addStar(); }
     }
     lastIngredientTime = millis();
   }
@@ -260,7 +285,6 @@ function drawHealthBar() {
   textAlign(CENTER, CENTER);
   text("Poison: " + ceil(playerHealth) + "%", 187, 21);
 
-  // HUD Countdown Timer for Color Generator
   let isCritical = (playerHealth <= 30);
   let spawnInterval = isCritical ? 5000 : 10000;
   let timeRemaining = max(0, ceil((spawnInterval - (millis() - lastIngredientTime)) / 1000));
@@ -542,6 +566,7 @@ function initGame() {
   isDrinkMode = false;
   gameStage = 1;
   lastBrewedColor = [40, 50, 70];
+  usedTargetColors = [];
   setupStageTarget(1);
   gameStartTime = millis();
   lastIngredientTime = millis();
