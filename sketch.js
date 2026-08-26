@@ -211,8 +211,10 @@ function setupStageTarget(stage) {
 }
 
 function updateIngredientsAndHealth() {
-  // Regenerate 1 random base RGB color every 10 seconds
-  if (millis() - lastIngredientTime >= 10000) {
+  // Boost base ingredient production from 10s -> 5s when Poison HP drops below 30%
+  let spawnInterval = (playerHealth <= 30) ? 5000 : 10000;
+  
+  if (millis() - lastIngredientTime >= spawnInterval) {
     let randomIndex = floor(random(0, baseColors.length));
     if (allRings[0] && allRings[0][randomIndex]) {
       allRings[0][randomIndex].count++;
@@ -271,7 +273,6 @@ function drawTargetCure() {
   strokeWeight(1);
   ellipse(340, 36, 18, 18);
   
-  // EMERGENCY HINT LOGIC: Locked until Poison Health <= 30%
   if (playerHealth <= 30) {
     fill(255, 90, 90);
     textSize(8);
@@ -584,7 +585,6 @@ function initGame() {
     } 
   });
 
-  // POT INVENTORY RETURN (CLEAR POT) BUTTON
   btnClear = new Button({
     x: 185, y: 350, width: 95, label: "Clear Pot",
     onClick: function() {
@@ -654,7 +654,7 @@ const scenes = {
       "Stage 2: Mix 2-3 Level 1 potions.", 
       "Stage 3: Mix 2-3 Level 2 potions.", 
       "Stage 4: Mix 2-3 Level 3 potions to win!",
-      "", "Emergency Hints unlock when Poison is < 30%!"
+      "", "Emergency Hints & 2x Spawn Speed unlock at <30% HP!"
     ];
     for (let i = 0; i < rules.length; i++) {
       text(rules[i], 200, 50 + i * 38);
