@@ -215,9 +215,11 @@ function updateIngredientsAndHealth() {
   let spawnInterval = (playerHealth <= 30) ? 5000 : 10000;
   
   if (millis() - lastIngredientTime >= spawnInterval) {
-    let randomIndex = floor(random(0, baseColors.length));
-    if (allRings[0] && allRings[0][randomIndex]) {
-      allRings[0][randomIndex].count++;
+    if (allRings[0]) {
+      // Adds +1 to all 3 basic colors at every interval
+      for (let k = 0; k < allRings[0].length; k++) {
+        allRings[0][k].count++;
+      }
     }
     lastIngredientTime = millis();
   }
