@@ -8,7 +8,7 @@ let isDrinkMode = false;
 let lastBrewedColor = [40, 50, 70];
 let targetRemedyColor = [0, 0, 0];
 let targetRecipe = [];
-let usedTargetColors = []; // Tracks target colors to ensure uniqueness per level
+let usedTargetColors = [];
 
 const baseColors = [
   [255, 0, 0],   // Red
@@ -178,24 +178,17 @@ function blendColors(arr) {
   return [round(r / arr.length), round(g / arr.length), round(b / arr.length)];
 }
 
-function getPossibleColorsForTier(tier) {
-  if (tier === 0) return baseColors;
-  
-  if (allRings[tier] && allRings[tier].length > 0) {
-    return allRings[tier].map(item => item.color);
+// Procedurally generates a random valid color for a given tier
+function getRandomColorForTier(tier) {
+  if (tier === 0) {
+    return baseColors[floor(random(0, baseColors.length))];
   }
-  
-  let lowerPool = getPossibleColorsForTier(tier - 1);
-  let candidates = [];
-  for (let c = 0; c < 3; c++) {
-    let num = floor(random(2, 4));
-    let combo = [];
-    for (let i = 0; i < num; i++) {
-      combo.push(lowerPool[floor(random(0, lowerPool.length))]);
-    }
-    candidates.push(blendColors(combo));
+  let num = floor(random(2, 4));
+  let combo = [];
+  for (let i = 0; i < num; i++) {
+    combo.push(getRandomColorForTier(tier - 1));
   }
-  return candidates;
+  return blendColors(combo);
 }
 
 function setupStageTarget(stage) {
@@ -204,23 +197,24 @@ function setupStageTarget(stage) {
   }
 
   let sourceTier = stage - 1;
-  let pool = getPossibleColorsForTier(sourceTier);
-  
   let unique = false;
   let attempts = 0;
 
-  // Guarantees a unique target color distinct from all previous stages
-  while (!unique && attempts < 100) {
+  while (!unique && attempts < 200) {
     let numItems = floor(random(2, 4));
     let candidateRecipe = [];
+
     for (let i = 0; i < numItems; i++) {
-      candidateRecipe.push(pool[floor(random(0, pool.length))]);
+      candidateRecipe.push(getRandomColorForTier(sourceTier));
     }
 
     let candidateColor = blendColors(candidateRecipe);
 
+    // Checks if candidate color is strictly distinct from previous stages
     let isDuplicate = usedTargetColors.some(
-      c => c[0] === candidateColor[0] && c[1] === candidateColor[1] && c[2] === candidateColor[2]
+      c => Math.abs(c[0] - candidateColor[0]) <= 3 &&
+           Math.abs(c[1] - candidateColor[1]) <= 3 &&
+           Math.abs(c[2] - candidateColor[2]) <= 3
     );
 
     if (!isDuplicate) {
@@ -230,12 +224,6 @@ function setupStageTarget(stage) {
       unique = true;
     }
     attempts++;
-  }
-
-  if (!unique) {
-    targetRecipe = [pool[0], pool[1]];
-    targetRemedyColor = blendColors(targetRecipe);
-    usedTargetColors.push(targetRemedyColor);
   }
 }
 
