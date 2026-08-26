@@ -1,4 +1,4 @@
-==========================================
+// ==========================================
 // 1. GAME STATE & GLOBAL CONFIGURATION
 // ==========================================
 let currentScene = 1;
@@ -702,3 +702,4 @@ function mouseClicked() {
   else if (currentScene === 2) btn2.handleMouseClick();
   else if (currentScene === 4 || currentScene === 5) btnRestart.handleMouseClick();
   else if (currentScene === 6) btnNextStage.handleMouseClick();
+}
