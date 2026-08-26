@@ -7,6 +7,7 @@ let smokeEndTime = 0;
 let isDrinkMode = false;
 let lastBrewedColor = [40, 50, 70];
 let targetRemedyColor = [0, 0, 0];
+let targetRecipe = []; // Holds the exact ingredient colors required for the current stage
 
 const baseColors = [
   [255, 0, 0],   // Pure Red
@@ -67,7 +68,7 @@ class Button {
 }
 
 // ==========================================
-// 3. OPTIMIZED PARTICLE SYSTEM
+// 3. PARTICLE SYSTEM
 // ==========================================
 class Particle {
   constructor(pos) {
@@ -176,24 +177,16 @@ function blendColors(arr) {
   return [round(r / arr.length), round(g / arr.length), round(b / arr.length)];
 }
 
-function getStageTarget(stage) {
-  if (stage === 1) {
-    let num = floor(random(2, 4));
-    let combo = [];
-    for (let i = 0; i < num; i++) {
-      combo.push(baseColors[floor(random(0, baseColors.length))]);
-    }
-    return blendColors(combo);
-  }
-
+function setupStageTarget(stage) {
   let sourceTier = stage - 1;
+
   if (!allRings[sourceTier]) {
     allRings[sourceTier] = [];
   }
 
   // Ensure minimum ingredient options exist for higher levels
   while (allRings[sourceTier].length < 2) {
-    let prevPool = (allRings[sourceTier - 1] && allRings[sourceTier - 1].length > 0) 
+    let prevPool = (sourceTier > 0 && allRings[sourceTier - 1].length > 0) 
       ? allRings[sourceTier - 1].map(item => item.color) 
       : baseColors;
       
@@ -202,18 +195,24 @@ function getStageTarget(stage) {
     for (let i = 0; i < num; i++) {
       combo.push(prevPool[floor(random(0, prevPool.length))]);
     }
-    allRings[sourceTier].push({ color: blendColors(combo), count: 2 });
+    allRings[sourceTier].push({ color: blendColors(combo), count: 5 });
   }
 
+  // Replenish stock counts for unlocked ingredients so the stage is solvable
+  for (let item of allRings[sourceTier]) {
+    item.count = max(item.count, 5);
+  }
+
+  // Generate target recipe from unlocked ingredients
   let sourcePool = allRings[sourceTier].map(item => item.color);
   let numItems = floor(random(2, 4));
-  let targetCombo = [];
+  targetRecipe = [];
   
   for (let i = 0; i < numItems; i++) {
-    targetCombo.push(sourcePool[floor(random(0, sourcePool.length))]);
+    targetRecipe.push(sourcePool[floor(random(0, sourcePool.length))]);
   }
 
-  return blendColors(targetCombo);
+  targetRemedyColor = blendColors(targetRecipe);
 }
 
 function updateIngredientsAndHealth() {
@@ -245,40 +244,50 @@ function drawHealthBar() {
   stroke(0);
   strokeWeight(1.5);
   fill(40);
-  rect(100, 12, 190, 18, 5);
+  rect(95, 12, 185, 18, 5);
   
   noStroke();
   fill(map(playerHealth, 0, 100, 255, 0), map(playerHealth, 0, 100, 0, 220), 50);
-  rect(101, 13, map(playerHealth, 0, 100, 0, 188), 16, 4);
+  rect(96, 13, map(playerHealth, 0, 100, 0, 183), 16, 4);
   
   fill(255);
   textSize(11);
   textAlign(CENTER, CENTER);
-  text("Poison: " + ceil(playerHealth) + "%", 195, 21);
+  text("Poison: " + ceil(playerHealth) + "%", 187, 21);
   pop();
 }
 
 function drawTargetCure() {
   push();
-  fill(0, 0, 0, 160);
+  fill(0, 0, 0, 180);
   stroke(255, 215, 0);
   strokeWeight(1.5);
-  rect(300, 8, 92, 58, 5);
+  rect(288, 8, 104, 75, 5);
   
   fill(255, 215, 0);
   textSize(10);
   textAlign(CENTER, CENTER);
-  text("Stage " + gameStage + " / 4", 346, 18);
+  text("Stage " + gameStage + " / 4 Target", 340, 18);
   
   fill(targetRemedyColor[0], targetRemedyColor[1], targetRemedyColor[2]);
   stroke(255);
   strokeWeight(1);
-  ellipse(346, 35, 18, 18);
+  ellipse(340, 36, 18, 18);
   
-  fill(255);
-  textSize(9);
-  textAlign(CENTER, CENTER);
-  text("Target Remedy", 346, 53);
+  fill(220);
+  textSize(8);
+  text("Recipe Ingredients:", 340, 51);
+
+  // Render recipe hint dots
+  if (targetRecipe && targetRecipe.length > 0) {
+    let startX = 340 - ((targetRecipe.length - 1) * 12) / 2;
+    for (let k = 0; k < targetRecipe.length; k++) {
+      fill(targetRecipe[k][0], targetRecipe[k][1], targetRecipe[k][2]);
+      stroke(255);
+      strokeWeight(1);
+      ellipse(startX + k * 12, 64, 9, 9);
+    }
+  }
   pop();
 }
 
@@ -360,15 +369,22 @@ function drawGrimoireOverlay() {
   if (isDrinkMode) {
     fill(255, 120, 120);
     textSize(11);
-    text("Click a node to drink potion for Stage " + gameStage + "!", 200, 42);
+    text("Click a Level " + gameStage + " potion to test Stage " + gameStage + "!", 200, 42);
   }
   
   let levelY = [68, 120, 172, 224, 276, 330];
   for (let l = 0; l <= 5; l++) {
-    fill(200);
+    // Highlight active target tier row
+    if (l === gameStage) {
+      fill(255, 215, 0, 50);
+      noStroke();
+      rect(20, levelY[l] - 12, 360, 24, 4);
+    }
+
+    fill(l === gameStage ? color(255, 215, 0) : color(200));
     textSize(10);
     textAlign(LEFT, CENTER);
-    text("Lvl " + l + ":", 25, levelY[l]);
+    text("Lvl " + l + (l === gameStage ? " (Target):" : ":"), 25, levelY[l]);
     
     if (l < 5) {
       stroke(255, 215, 0, 60);
@@ -378,7 +394,7 @@ function drawGrimoireOverlay() {
     
     if (l === 0) {
       for (let b = 0; b < baseColors.length; b++) {
-        let bx = map(b, 0, baseColors.length - 1, 130, 270);
+        let bx = map(b, 0, baseColors.length - 1, 140, 260);
         fill(baseColors[b][0], baseColors[b][1], baseColors[b][2]);
         stroke(255);
         strokeWeight(1);
@@ -398,7 +414,7 @@ function drawGrimoireOverlay() {
       let ringItems = (l < allRings.length) ? allRings[l] : [];
       let maxSlots = max(3, ringItems.length);
       for (let n = 0; n < maxSlots; n++) {
-        let nx = map(n, 0, max(1, maxSlots - 1), 100, 330);
+        let nx = map(n, 0, max(1, maxSlots - 1), 120, 320);
         if (n < ringItems.length) {
           let c = ringItems[n].color;
           fill(c[0], c[1], c[2]);
@@ -443,7 +459,7 @@ function handleTreeClick() {
   let levelY = [68, 120, 172, 224, 276, 330];
   
   for (let b = 0; b < baseColors.length; b++) {
-    let bx = map(b, 0, baseColors.length - 1, 130, 270);
+    let bx = map(b, 0, baseColors.length - 1, 140, 260);
     if (dist(mouseX, mouseY, bx, levelY[0]) <= 12) {
       drinkPotion(baseColors[b]);
       return true;
@@ -454,8 +470,8 @@ function handleTreeClick() {
     let ringItems = (l < allRings.length) ? allRings[l] : [];
     let maxSlots = max(3, ringItems.length);
     for (let n = 0; n < ringItems.length; n++) {
-      let nx = map(n, 0, max(1, maxSlots - 1), 100, 330);
-      if (dist(mouseX, mouseY, nx, levelY[l]) <= 12) {
+      let nx = map(n, 0, max(1, maxSlots - 1), 120, 320);
+      if (dist(mouseX, mouseY, nx, levelY[l]) <= 14) {
         drinkPotion(ringItems[n].color);
         return true;
       }
@@ -475,7 +491,7 @@ function handleIngredientClick() {
         let angle = getSymmetricalAngle(i, ringItems.length);
         let x = centerX + radius * cos(angle);
         let y = centerY + radius * sin(angle);
-        if (dist(mouseX, mouseY, x, y) <= 12) {
+        if (dist(mouseX, mouseY, x, y) <= 14) {
           ringItems[i].count--;
           potIngredients.push({ color: ringItems[i].color, tier: r });
           return;
@@ -497,7 +513,7 @@ function setup() {
 function initGame() {
   allRings = [[]];
   for (let k = 0; k < baseColors.length; k++) {
-    allRings[0].push({ color: baseColors[k], count: 1 });
+    allRings[0].push({ color: baseColors[k], count: 5 });
   }
   potIngredients = [];
   playerHealth = 100;
@@ -505,7 +521,7 @@ function initGame() {
   isDrinkMode = false;
   gameStage = 1;
   lastBrewedColor = [40, 50, 70];
-  targetRemedyColor = getStageTarget(1);
+  setupStageTarget(1);
   gameStartTime = millis();
   lastIngredientTime = millis();
 
@@ -522,7 +538,7 @@ function initGame() {
     onClick: function() { 
       currentScene = 3; 
       gameStage = 1;
-      targetRemedyColor = getStageTarget(1);
+      setupStageTarget(1);
       lastIngredientTime = millis();
       gameStartTime = millis();
     } 
@@ -580,7 +596,7 @@ function initGame() {
   });
 
   btnDrink = new Button({
-    x: 8, y: 10, width: 85, height: 25, label: "Drink Potion",
+    x: 8, y: 10, width: 80, height: 25, label: "Drink Potion",
     onClick: function() { showGrimoire = true; isDrinkMode = true; }
   });
 
@@ -588,7 +604,7 @@ function initGame() {
     x: 145, y: 250, width: 110, label: "Next Stage",
     onClick: function() {
       gameStage++;
-      targetRemedyColor = getStageTarget(gameStage);
+      setupStageTarget(gameStage);
       playerHealth = min(100, playerHealth + 30);
       gameStartTime = millis() - (100 - playerHealth) * 2000;
       isDrinkMode = false;
@@ -626,7 +642,7 @@ const scenes = {
       "Stage 2: Mix 2-3 Level 1 potions.", 
       "Stage 3: Mix 2-3 Level 2 potions.", 
       "Stage 4: Mix 2-3 Level 3 potions to win!",
-      "", "Every stage drains your health!"
+      "", "Look at the Recipe Ingredients under the Target Remedy!"
     ];
     for (let i = 0; i < rules.length; i++) {
       text(rules[i], 200, 50 + i * 38);
