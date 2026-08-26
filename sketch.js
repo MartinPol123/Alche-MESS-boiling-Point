@@ -211,7 +211,7 @@ function setupStageTarget(stage) {
 }
 
 function updateIngredientsAndHealth() {
-  // Boost base ingredient production from 10s -> 5s when Poison HP drops below 30%
+  // Spawns 2x faster (5s vs 10s) on ANY stage when Poison HP drops <= 30%
   let spawnInterval = (playerHealth <= 30) ? 5000 : 10000;
   
   if (millis() - lastIngredientTime >= spawnInterval) {
