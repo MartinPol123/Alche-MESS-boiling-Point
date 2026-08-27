@@ -678,12 +678,14 @@ const scenes = {
     fill(7, 14, 145); textSize(13); textAlign(CENTER, CENTER);
     let rules = [
       "Rules of the Alchemist:", 
-      "You are poisoned! Drink 4 remedies to survive.", 
-      "Stage 1: Mix 2-3 Base potions (Level 0).", 
-      "Stage 2: Mix 2-3 Level 1 potions.", 
-      "Stage 3: Mix 2-3 Level 2 potions.", 
-      "Stage 4: Mix 2-3 Level 3 potions to win!",
-      "", "Emergency Hints & 2x Spawn Speed unlock at <30% HP!"
+      "You were poisoned! Drink 4 potions to survive.", 
+      "You may mix 2 or 3 colors and boil a new one",
+      "In the right top corner is the actual remedy",
+      "In the left top corner you may drink the potion",
+      "But if it is wrong, you will lose 10% of health",
+      "",
+      "Now, mix 2 or 3 basic colors to get first potion", 
+      "Emergency Hints unlock at <30% health!"
     ];
     for (let i = 0; i < rules.length; i++) {
       text(rules[i], 200, 50 + i * 38);
